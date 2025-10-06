@@ -1,0 +1,5 @@
+{
+  "name": "Kfz-Schadenaufnahme App",
+  "description": "Eine moderne Web-Anwendung zur digitalen Erfassung von Kfz-Schäden. Benutzer können durch einen geführten Prozess Schäden melden, Fotos hochladen und ihre Meldungen verwalten.",
+  "requestFramePermissions": []
+}
