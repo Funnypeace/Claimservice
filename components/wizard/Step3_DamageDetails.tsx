@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { DamageReport } from '../../types';
 import Input from '../ui/Input';
@@ -19,16 +18,18 @@ const Step3Damage: React.FC<Step3Props> = ({ data, onChange, errors }) => {
         <h3 className="text-lg font-medium leading-6 text-slate-900">Schadendetails</h3>
         <p className="mt-1 text-sm text-slate-500">Beschreiben Sie den Vorfall und den entstandenen Schaden.</p>
       </div>
+
       <div className="space-y-6">
         <Input
           label="Datum des Vorfalls"
           id="incidentDate"
           type="date"
-          value={data.incidentDate}
+          value={data.incidentDate || ""}
           onChange={(e) => onChange('incidentDate', e.target.value)}
           error={errors.incidentDate}
           required
         />
+
         <div>
           <label htmlFor="damageDescription" className="block text-sm font-medium text-slate-700">
             Schadensbeschreibung
