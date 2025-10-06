@@ -1,6 +1,34 @@
 import { DamageReport, ReportStatus } from '../types';
 import { createReport as createReportAPI, updateReport as updateReportAPI, getReport as getReportAPI, uploadFile } from '../src/lib/api';
 
+// Helper function to normalize date to ISO format (YYYY-MM-DD)
+function normalizeDate(dateStr: string): string {
+  if (!dateStr) return '';
+  
+  // If already in ISO format (YYYY-MM-DD), return as-is
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    return dateStr;
+  }
+  
+  // Handle German date format (DD.MM.YYYY or D.M.YYYY)
+  const germanMatch = dateStr.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
+  if (germanMatch) {
+    const day = germanMatch[1].padStart(2, '0');
+    const month = germanMatch[2].padStart(2, '0');
+    const year = germanMatch[3];
+    return `${year}-${month}-${day}`;
+  }
+  
+  // Try parsing as a general date and converting to ISO
+  const date = new Date(dateStr);
+  if (!isNaN(date.getTime())) {
+    return date.toISOString().slice(0, 10);
+  }
+  
+  // Return original if we can't parse it
+  return dateStr;
+}
+
 // Note: This service now uses the backend API instead of localStorage.
 // The mock data functions are kept for potential future use but not actively used.
 
@@ -55,6 +83,7 @@ const getInitialMockData = (): DamageReport[] => [
 
 // Note: getReports and getReportById are not implemented in the new API
 // These would need to be added to the backend or handled differently
+
 export const getReports = async (): Promise<DamageReport[]> => {
   // TODO: Implement a backend endpoint to list all reports
   // For now, return empty array or throw error
@@ -72,13 +101,25 @@ export const getReportByPublicId = async (publicId: string): Promise<DamageRepor
 };
 
 export const createReport = async (reportData: Omit<DamageReport, 'id' | 'createdAt' | 'updatedAt'>): Promise<{ id: string; publicId: string; editToken: string; report: DamageReport }> => {
+  // Normalize the incident date before sending to API
+  const normalizedData = {
+    ...reportData,
+    incidentDate: normalizeDate(reportData.incidentDate)
+  };
+  
   // Call the backend API to create the report
-  const response = await createReportAPI(reportData);
+  const response = await createReportAPI(normalizedData);
   return response;
 };
 
 export const updateReport = async (id: string, editToken: string, reportData: Partial<DamageReport>): Promise<DamageReport> => {
-  const response = await updateReportAPI(id, editToken, reportData);
+  // Normalize the incident date if it exists
+  const normalizedData = {
+    ...reportData,
+    ...(reportData.incidentDate && { incidentDate: normalizeDate(reportData.incidentDate) })
+  };
+  
+  const response = await updateReportAPI(id, editToken, normalizedData);
   return response;
 };
 
