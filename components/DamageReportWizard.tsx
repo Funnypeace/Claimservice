@@ -1,7 +1,7 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { DamageReport, ReportStatus } from '../types';
 import { getReportById, createReport, updateReport } from '../services/damageReportService';
+import { toISOFromInput } from '../src/lib/date';
 import ProgressBar from './ui/ProgressBar';
 import Step1Policyholder from './wizard/Step1_PolicyholderInfo';
 import Step2Vehicle from './wizard/Step2_VehicleInfo';
@@ -19,7 +19,6 @@ const emptyReport: Omit<DamageReport, 'id' | 'createdAt' | 'updatedAt'> = {
   incidentDate: '',
   files: [],
 };
-
 
 interface DamageReportWizardProps {
   reportId: string | null;
@@ -80,6 +79,7 @@ const DamageReportWizard: React.FC<DamageReportWizardProps> = ({ reportId, onBac
         setCurrentStep((prev) => Math.min(prev + 1, TOTAL_STEPS));
     }
   };
+
   const prevStep = () => setCurrentStep((prev) => Math.max(prev - 1, 1));
   
   const handleDataChange = (section: keyof DamageReport, field: string, value: any) => {
@@ -98,7 +98,8 @@ const DamageReportWizard: React.FC<DamageReportWizardProps> = ({ reportId, onBac
   
   const handleSave = async (status: ReportStatus) => {
     setIsSaving(true);
-    const finalReportData = { ...reportData, status };
+    const normalizedIncidentDate = toISOFromInput(reportData.incidentDate);
+    const finalReportData = { ...reportData, status, incidentDate: normalizedIncidentDate };
     try {
         if (reportId) {
             await updateReport(reportId, finalReportData);
@@ -112,7 +113,6 @@ const DamageReportWizard: React.FC<DamageReportWizardProps> = ({ reportId, onBac
         setIsSaving(false);
     }
   };
-
 
   if (isLoading) {
     return (
@@ -148,7 +148,6 @@ const DamageReportWizard: React.FC<DamageReportWizardProps> = ({ reportId, onBac
         >
           {currentStep === 1 ? 'Abbrechen' : 'Zurück'}
         </button>
-
         {currentStep < TOTAL_STEPS && (
           <button
             onClick={nextStep}
