@@ -1,7 +1,8 @@
-
 import { DamageReport, ReportStatus } from '../types';
+import { createReport as createReportAPI, updateReport as updateReportAPI, getReport as getReportAPI, uploadFile } from '../src/lib/api';
 
-const LOCAL_STORAGE_KEY = 'damageReports';
+// Note: This service now uses the backend API instead of localStorage.
+// The mock data functions are kept for potential future use but not actively used.
 
 const getInitialMockData = (): DamageReport[] => [
   {
@@ -48,83 +49,37 @@ const getInitialMockData = (): DamageReport[] => [
   },
 ];
 
-const getAllReportsFromStorage = (): DamageReport[] => {
-  try {
-    const reportsJson = localStorage.getItem(LOCAL_STORAGE_KEY);
-    if (reportsJson) {
-      return JSON.parse(reportsJson);
-    } else {
-      const initialData = getInitialMockData();
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(initialData));
-      return initialData;
-    }
-  } catch (error) {
-    console.error('Error reading from localStorage', error);
-    return getInitialMockData();
-  }
-};
+// REMOVED: localStorage functions are no longer used
+// const getAllReportsFromStorage = () => {...}
+// const saveAllReportsToStorage = () => {...}
 
-const saveAllReportsToStorage = (reports: DamageReport[]) => {
-  try {
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(reports));
-  } catch (error) {
-    console.error('Error writing to localStorage', error);
-  }
-};
-
-// Simulate async API calls
+// Note: getReports and getReportById are not implemented in the new API
+// These would need to be added to the backend or handled differently
 export const getReports = async (): Promise<DamageReport[]> => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const reports = getAllReportsFromStorage();
-      resolve(reports.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
-    }, 500);
-  });
+  // TODO: Implement a backend endpoint to list all reports
+  // For now, return empty array or throw error
+  throw new Error('getReports: Not implemented with new API');
 };
 
 export const getReportById = async (id: string): Promise<DamageReport | undefined> => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const reports = getAllReportsFromStorage();
-      resolve(reports.find((report) => report.id === id));
-    }, 300);
-  });
+  // Use publicId if available, otherwise this needs backend support
+  // The new API uses publicId, not internal id
+  throw new Error('getReportById: Use getReportByPublicId instead');
 };
 
-export const createReport = async (reportData: Omit<DamageReport, 'id' | 'createdAt' | 'updatedAt'>): Promise<DamageReport> => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const reports = getAllReportsFromStorage();
-      const newReport: DamageReport = {
-        ...reportData,
-        id: crypto.randomUUID(),
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-      const updatedReports = [newReport, ...reports];
-      saveAllReportsToStorage(updatedReports);
-      resolve(newReport);
-    }, 500);
-  });
+export const getReportByPublicId = async (publicId: string): Promise<DamageReport> => {
+  return await getReportAPI(publicId);
 };
 
-export const updateReport = async (id: string, reportData: Partial<DamageReport>): Promise<DamageReport> => {
-   return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      const reports = getAllReportsFromStorage();
-      const reportIndex = reports.findIndex((report) => report.id === id);
-      if (reportIndex !== -1) {
-        const updatedReport = {
-          ...reports[reportIndex],
-          ...reportData,
-          updatedAt: new Date().toISOString(),
-        };
-        reports[reportIndex] = updatedReport;
-        saveAllReportsToStorage(reports);
-        resolve(updatedReport);
-      } else {
-        reject(new Error('Report not found'));
-      }
-    }, 500);
-  });
+export const createReport = async (reportData: Omit<DamageReport, 'id' | 'createdAt' | 'updatedAt'>): Promise<{ id: string; publicId: string; editToken: string; report: DamageReport }> => {
+  // Call the backend API to create the report
+  const response = await createReportAPI(reportData);
+  return response;
 };
+
+export const updateReport = async (id: string, editToken: string, reportData: Partial<DamageReport>): Promise<DamageReport> => {
+  const response = await updateReportAPI(id, editToken, reportData);
+  return response;
+};
+
+export { uploadFile };
