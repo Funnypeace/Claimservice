@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { DamageReport, ReportStatus } from '../types';
 import { EditIcon, EyeIcon } from './ui/Icons';
@@ -14,6 +13,7 @@ const StatusBadge: React.FC<{ status: ReportStatus }> = ({ status }) => {
     const statusClasses = status === ReportStatus.SUBMITTED
         ? "bg-green-100 text-green-800"
         : "bg-yellow-100 text-yellow-800";
+
     return <span className={`${baseClasses} ${statusClasses}`}>{status}</span>;
 };
 
@@ -34,9 +34,9 @@ const ReportCard: React.FC<ReportCardProps> = ({ report, onView, onEdit }) => {
                     <StatusBadge status={report.status} />
                 </div>
                 <h3 className="mt-2 text-lg font-semibold text-slate-900 truncate">
-                    {report.vehicle.make} {report.vehicle.model}
+                    {report?.vehicle?.make ?? ""} {report?.vehicle?.model ?? ""}
                 </h3>
-                <p className="text-sm text-slate-600">{report.vehicle.licensePlate}</p>
+                <p className="text-sm text-slate-600">{report?.vehicle?.licensePlate ?? ""}</p>
                 <p className="mt-3 text-sm text-slate-500">Gemeldet am: {formattedDate}</p>
             </div>
             <div className="border-t border-slate-200 bg-slate-50 px-5 py-3 flex justify-end space-x-3">
@@ -60,6 +60,6 @@ const ReportCard: React.FC<ReportCardProps> = ({ report, onView, onEdit }) => {
             </div>
         </div>
     );
-}
+};
 
 export default ReportCard;
