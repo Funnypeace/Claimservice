@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { getReportById } from '../services/damageReportService';
 import { DamageReport, UploadedFile } from '../types';
@@ -14,7 +13,6 @@ const DetailSection: React.FC<{ title: string, children: React.ReactNode }> = ({
         <dd className="mt-1 text-sm text-slate-900 sm:col-span-2 sm:mt-0">{children}</dd>
     </div>
 );
-
 
 const DamageReportDetail: React.FC<DamageReportDetailProps> = ({ reportId, onBack }) => {
   const [report, setReport] = useState<DamageReport | null>(null);
@@ -54,10 +52,15 @@ const DamageReportDetail: React.FC<DamageReportDetailProps> = ({ reportId, onBac
                 Fall-ID: {report.id}
             </p>
         </div>
+
       <div className="border-t border-slate-200 px-4 py-5 sm:p-0">
         <dl className="sm:divide-y sm:divide-slate-200">
             <div className="px-4 sm:px-6">
-                 <DetailSection title="Status"><span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${status === 'Eingereicht' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>{status}</span></DetailSection>
+                 <DetailSection title="Status">
+                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${status === 'Eingereicht' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                        {status}
+                    </span>
+                </DetailSection>
                  <DetailSection title="Gemeldet am">{new Date(createdAt).toLocaleString('de-DE')}</DetailSection>
             </div>
 
@@ -65,20 +68,20 @@ const DamageReportDetail: React.FC<DamageReportDetailProps> = ({ reportId, onBac
                 <h3 className="text-lg font-medium text-slate-900">Versicherungsnehmer</h3>
             </div>
             <div className="px-4 sm:px-6">
-                <DetailSection title="Name">{policyholder.name}</DetailSection>
-                <DetailSection title="Policennummer">{policyholder.policyNumber}</DetailSection>
-                <DetailSection title="E-Mail">{policyholder.email}</DetailSection>
-                <DetailSection title="Telefon">{policyholder.phone}</DetailSection>
+                <DetailSection title="Name">{policyholder?.name ?? ""}</DetailSection>
+                <DetailSection title="Policennummer">{policyholder?.policyNumber ?? ""}</DetailSection>
+                <DetailSection title="E-Mail">{policyholder?.email ?? ""}</DetailSection>
+                <DetailSection title="Telefon">{policyholder?.phone ?? ""}</DetailSection>
             </div>
             
             <div className="px-4 py-3 sm:px-6 bg-slate-50 mt-4">
                 <h3 className="text-lg font-medium text-slate-900">Fahrzeug</h3>
             </div>
             <div className="px-4 sm:px-6">
-                <DetailSection title="Marke">{vehicle.make}</DetailSection>
-                <DetailSection title="Modell">{vehicle.model}</DetailSection>
-                <DetailSection title="Kennzeichen">{vehicle.licensePlate}</DetailSection>
-                <DetailSection title="Fahrgestellnummer (VIN)">{vehicle.vin}</DetailSection>
+                <DetailSection title="Marke">{vehicle?.make ?? ""}</DetailSection>
+                <DetailSection title="Modell">{vehicle?.model ?? ""}</DetailSection>
+                <DetailSection title="Kennzeichen">{vehicle?.licensePlate ?? ""}</DetailSection>
+                <DetailSection title="Fahrgestellnummer (VIN)">{vehicle?.vin ?? ""}</DetailSection>
             </div>
 
             <div className="px-4 py-3 sm:px-6 bg-slate-50 mt-4">
