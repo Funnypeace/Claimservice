@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { DamageReport, ReportStatus } from '../types';
 import { getReportById, createReport, updateReport } from '../services/damageReportService';
 import { toISOFromInput } from '../src/lib/date';
+
 import ProgressBar from './ui/ProgressBar';
 import Step1Policyholder from './wizard/Step1_PolicyholderInfo';
 import Step2Vehicle from './wizard/Step2_VehicleInfo';
@@ -62,9 +63,9 @@ const DamageReportWizard: React.FC<DamageReportWizardProps> = ({ reportId, onBac
         if (!reportData.policyholder.email) errors.email = 'E-Mail ist erforderlich.';
     }
     if (currentStep === 2) {
-        if (!reportData.vehicle.make) errors.make = 'Marke ist erforderlich.';
-        if (!reportData.vehicle.model) errors.model = 'Modell ist erforderlich.';
-        if (!reportData.vehicle.licensePlate) errors.licensePlate = 'Kennzeichen ist erforderlich.';
+        if (!reportData?.vehicle?.make) errors.make = 'Marke ist erforderlich.';
+        if (!reportData?.vehicle?.model) errors.model = 'Modell ist erforderlich.';
+        if (!reportData?.vehicle?.licensePlate) errors.licensePlate = 'Kennzeichen ist erforderlich.';
     }
     if (currentStep === 3) {
         if (!reportData.incidentDate) errors.incidentDate = 'Datum ist erforderlich.';
