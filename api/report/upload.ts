@@ -5,18 +5,24 @@ export default async function handler(req: Request) {
   if (req.method !== "POST") return new Response("Method Not Allowed", { status: 405 });
 
   const ctype = req.headers.get("content-type") || "";
-  if (!ctype.includes("multipart/form-data")) return new Response("Unsupported Media Type", { status: 415 });
+  if (!ctype.includes("multipart/form-data")) {
+    return new Response("Unsupported Media Type", { status: 415 });
+  }
 
   const form = await req.formData();
   const id = form.get("id") as string;
   const editToken = form.get("editToken") as string;
   const file = form.get("file") as File | null;
 
-  if (!id || !editToken || !file) return new Response("Bad Request", { status: 400 });
+  if (!id || !editToken || !file) {
+    return new Response(JSON.stringify({ error: "missing id/editToken/file" }), {
+      status: 400, headers: { "Content-Type": "application/json" }
+    });
+  }
 
   const supa = adminClient();
 
-  // verify edit token + fetch public_id
+  // check token + fetch public_id
   const { data: report, error: e1 } = await supa
     .from("damage_reports")
     .select("id, public_id, edit_token")
@@ -30,23 +36,40 @@ export default async function handler(req: Request) {
   const ext = (file.name.split(".").pop() || "bin").toLowerCase();
   const objectName = `${report.public_id}/${crypto.randomUUID()}.${ext}`;
 
+  // size guard
   const maxMb = Number(process.env.MAX_UPLOAD_MB || 20);
   if (file.size > maxMb * 1024 * 1024) {
-    return new Response(`File too large (> ${maxMb} MB)`, { status: 413 });
+    return new Response(JSON.stringify({ error: `File too large (> ${maxMb} MB)` }), {
+      status: 413, headers: { "Content-Type": "application/json" }
+    });
   }
 
-  const buf = await file.arrayBuffer();
-  const { error: upErr } = await supa.storage.from(bucket).upload(objectName, buf, {
-    contentType: file.type || "application/octet-stream",
-    upsert: false,
-  });
+  // ✅ entscheidend: File/Blob DIREKT an upload() geben (kein ArrayBuffer)
+  const { data: upRes, error: upErr } = await supa.storage
+    .from(bucket)
+    .upload(objectName, file, {
+      contentType: file.type || "application/octet-stream",
+      upsert: false,
+    });
 
-  if (upErr) return new Response(JSON.stringify({ error: upErr.message }), { status: 500 });
+  if (upErr) {
+    return new Response(JSON.stringify({ error: upErr.message, hint: "storage_upload_failed" }), {
+      status: 500, headers: { "Content-Type": "application/json" }
+    });
+  }
 
-  // signed URL for preview (valid 7 days)
-  const { data: signed } = await supa.storage.from(bucket).createSignedUrl(objectName, 60 * 60 * 24 * 7);
+  // signierte URL (7 Tage)
+  const { data: signed, error: signErr } = await supa.storage
+    .from(bucket)
+    .createSignedUrl(objectName, 60 * 60 * 24 * 7);
 
-  // record in report_files
+  if (signErr) {
+    return new Response(JSON.stringify({ error: signErr.message, hint: "signed_url_failed" }), {
+      status: 500, headers: { "Content-Type": "application/json" }
+    });
+  }
+
+  // DB-Eintrag
   const { data: rf, error: insErr } = await supa
     .from("report_files")
     .insert({
@@ -59,10 +82,13 @@ export default async function handler(req: Request) {
     .select("id, storage_path, mime, filename, size_bytes, created_at")
     .single();
 
-  if (insErr) return new Response(JSON.stringify({ error: insErr.message }), { status: 500 });
+  if (insErr) {
+    return new Response(JSON.stringify({ error: insErr.message, hint: "insert_file_row_failed" }), {
+      status: 500, headers: { "Content-Type": "application/json" }
+    });
+  }
 
-  return new Response(
-    JSON.stringify({ file: rf, url: signed?.signedUrl }),
-    { headers: { "Content-Type": "application/json" } }
-  );
+  return new Response(JSON.stringify({ file: rf, url: signed?.signedUrl, path: upRes?.path }), {
+    headers: { "Content-Type": "application/json" }
+  });
 }
