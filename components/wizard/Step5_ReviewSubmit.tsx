@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { DamageReport } from '../../types';
 
@@ -22,6 +21,7 @@ const ReviewItem: React.FC<{ label: string, value?: string | number }> = ({ labe
 
 const Step5Review: React.FC<Step5Props> = ({ reportData }) => {
   const { policyholder, vehicle, damageDescription, incidentDate, files } = reportData;
+
   return (
     <div className="space-y-8">
       <div>
@@ -31,17 +31,17 @@ const Step5Review: React.FC<Step5Props> = ({ reportData }) => {
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         <ReviewSection title="Versicherungsnehmer">
-          <ReviewItem label="Name" value={policyholder.name} />
-          <ReviewItem label="Policennummer" value={policyholder.policyNumber} />
-          <ReviewItem label="E-Mail" value={policyholder.email} />
-          <ReviewItem label="Telefon" value={policyholder.phone} />
+          <ReviewItem label="Name" value={policyholder?.name ?? ""} />
+          <ReviewItem label="Policennummer" value={policyholder?.policyNumber ?? ""} />
+          <ReviewItem label="E-Mail" value={policyholder?.email ?? ""} />
+          <ReviewItem label="Telefon" value={policyholder?.phone ?? ""} />
         </ReviewSection>
 
         <ReviewSection title="Fahrzeug">
-          <ReviewItem label="Marke" value={vehicle.make} />
-          <ReviewItem label="Modell" value={vehicle.model} />
-          <ReviewItem label="Kennzeichen" value={vehicle.licensePlate} />
-          <ReviewItem label="VIN" value={vehicle.vin} />
+          <ReviewItem label="Marke" value={vehicle?.make ?? ""} />
+          <ReviewItem label="Modell" value={vehicle?.model ?? ""} />
+          <ReviewItem label="Kennzeichen" value={vehicle?.licensePlate ?? ""} />
+          <ReviewItem label="VIN" value={vehicle?.vin ?? ""} />
         </ReviewSection>
 
         <ReviewSection title="Schadensdetails">
