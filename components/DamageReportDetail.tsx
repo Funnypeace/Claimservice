@@ -1,3 +1,20 @@
+/*
+Barrierefreiheitsmaßnahmen für DamageReportDetail-Komponente:
+
+1. ARIA-Labels und Rollen:
+   - Hauptcontainer als <section role="region" aria-label="Schadenfall-Detailansicht"> kennzeichnen.
+   - Wichtige Bereiche (Versicherungsnehmer, Fahrzeug, Schaden, Dokumente) als <section> mit aria-labelledby auszeichnen.
+2. Tastatur-Navigation:
+   - Sicherstellen, dass alle interaktiven Elemente (z.B. Zurück-Button, Dokument-Links) per Tab erreichbar sind.
+   - Visuellen Fokuszustand für Buttons und Links hervorheben.
+3. Screenreader-Unterstützung:
+   - Überschriften und wichtige Felder mit aria-label oder aria-labelledby versehen.
+   - Lade- und Fehlerzustände mit role="status" auszeichnen.
+4. Weitere Maßnahmen:
+   - Semantische HTML-Struktur (section, header, dl, dt, dd) verwenden.
+   - Dokumentation der Änderungen im Quellcode.
+*/
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { getReportById } from '../services/damageReportService';
 import { DamageReport, UploadedFile } from '../types';
@@ -7,14 +24,14 @@ interface DamageReportDetailProps {
   onBack: () => void;
 }
 
-const DetailSection: React.FC<{ title: string, children: React.ReactNode }> = ({ title, children }) => (
-    <div className="py-5 sm:grid sm:grid-cols-3 sm:gap-4">
-        <dt className="text-sm font-medium text-slate-500">{title}</dt>
-        <dd className="mt-1 text-sm text-slate-900 sm:col-span-2 sm:mt-0">{children}</dd>
-    </div>
+const DetailSection: React.FC<{ title: string; children: React.ReactNode; sectionId: string }> = ({ title, children, sectionId }) => (
+  <section aria-labelledby={sectionId} className="py-5 sm:grid sm:grid-cols-3 sm:gap-4">
+    <dt id={sectionId} className="text-sm font-medium text-slate-500">{title}</dt>
+    <dd className="mt-1 text-sm text-slate-900 sm:col-span-2 sm:mt-0">{children}</dd>
+  </section>
 );
 
-const DamageReportDetail: React.FC<DamageReportDetailProps> = ({ reportId, onBack }) => {
+export const DamageReportDetail: React.FC<DamageReportDetailProps> = ({ reportId, onBack }) => {
   const [report, setReport] = useState<DamageReport | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -31,88 +48,87 @@ const DamageReportDetail: React.FC<DamageReportDetailProps> = ({ reportId, onBac
   }, [fetchReport]);
 
   if (isLoading) {
-    return <div className="text-center p-12">
-        <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto"></div>
-    </div>;
+    return (
+      <div role="status" aria-live="polite" className="text-center p-12">
+        <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto" aria-label="Lade Schadenfall-Daten"></div>
+      </div>
+    );
   }
 
   if (!report) {
-    return <div className="text-center p-12 text-red-500">Schadensmeldung nicht gefunden.</div>;
+    return (
+      <div role="status" aria-live="assertive" className="text-center p-12">
+        <span>Schadenfall nicht gefunden.</span>
+      </div>
+    );
   }
-  
-  const { policyholder, vehicle, damageDescription, incidentDate, files, status, createdAt } = report;
 
   return (
-    <div className="bg-white shadow-lg rounded-lg overflow-hidden">
-        <div className="px-4 py-5 sm:px-6 bg-slate-50 border-b border-slate-200">
-            <h2 className="text-xl font-semibold leading-6 text-slate-900">
-                Details zur Schadensmeldung
-            </h2>
-            <p className="mt-1 max-w-2xl text-sm text-slate-500">
-                Fall-ID: {report.id}
-            </p>
-        </div>
-
-      <div className="border-t border-slate-200 px-4 py-5 sm:p-0">
-        <dl className="sm:divide-y sm:divide-slate-200">
-            <div className="px-4 sm:px-6">
-                 <DetailSection title="Status">
-                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${status === 'Eingereicht' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
-                        {status}
-                    </span>
-                </DetailSection>
-                 <DetailSection title="Gemeldet am">{new Date(createdAt).toLocaleString('de-DE')}</DetailSection>
-            </div>
-
-            <div className="px-4 py-3 sm:px-6 bg-slate-50 mt-4">
-                <h3 className="text-lg font-medium text-slate-900">Versicherungsnehmer</h3>
-            </div>
-            <div className="px-4 sm:px-6">
-                <DetailSection title="Name">{policyholder?.name ?? ""}</DetailSection>
-                <DetailSection title="Policennummer">{policyholder?.policyNumber ?? ""}</DetailSection>
-                <DetailSection title="E-Mail">{policyholder?.email ?? ""}</DetailSection>
-                <DetailSection title="Telefon">{policyholder?.phone ?? ""}</DetailSection>
-            </div>
-            
-            <div className="px-4 py-3 sm:px-6 bg-slate-50 mt-4">
-                <h3 className="text-lg font-medium text-slate-900">Fahrzeug</h3>
-            </div>
-            <div className="px-4 sm:px-6">
-                <DetailSection title="Marke">{vehicle?.make ?? ""}</DetailSection>
-                <DetailSection title="Modell">{vehicle?.model ?? ""}</DetailSection>
-                <DetailSection title="Kennzeichen">{vehicle?.licensePlate ?? ""}</DetailSection>
-                <DetailSection title="Fahrgestellnummer (VIN)">{vehicle?.vin ?? ""}</DetailSection>
-            </div>
-
-            <div className="px-4 py-3 sm:px-6 bg-slate-50 mt-4">
-                <h3 className="text-lg font-medium text-slate-900">Schadensdetails</h3>
-            </div>
-            <div className="px-4 sm:px-6">
-                <DetailSection title="Schadensdatum">{new Date(incidentDate).toLocaleDateString('de-DE')}</DetailSection>
-                <DetailSection title="Beschreibung">
-                    <p className="whitespace-pre-wrap">{damageDescription}</p>
-                </DetailSection>
-                <DetailSection title="Dokumente & Fotos">
-                    {files.length > 0 ? (
-                        <ul className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                            {files.map((file, index) => (
-                                <li key={index} className="border border-slate-200 rounded-lg overflow-hidden">
-                                    <a href={file.dataUrl} target="_blank" rel="noopener noreferrer">
-                                        <img src={file.dataUrl} alt={file.name} className="w-full h-24 object-cover" />
-                                        <div className="p-2 text-xs truncate">{file.name}</div>
-                                    </a>
-                                </li>
-                            ))}
-                        </ul>
-                    ) : (
-                        "Keine Dateien hochgeladen."
-                    )}
-                </DetailSection>
-            </div>
-        </dl>
-      </div>
-    </div>
+    <section role="region" aria-label="Schadenfall-Detailansicht" className="damage-report-detail">
+      <header className="flex items-center justify-between mb-6">
+        <h1 id="damage-detail-title" className="text-2xl font-bold">Schadenfall-Details</h1>
+        <button
+          type="button"
+          aria-label="Zurück zur Übersicht"
+          onClick={onBack}
+          className="btn btn-secondary focus:outline focus:ring-2 focus:ring-blue-500"
+        >
+          Zurück
+        </button>
+      </header>
+      <dl aria-labelledby="damage-detail-title" className="space-y-4">
+        <DetailSection title="Status" sectionId="status-label">
+          <span id="status-label">{report.status}</span>
+        </DetailSection>
+        <DetailSection title="Erstellungsdatum" sectionId="created-label">
+          <span id="created-label">{new Date(report.createdAt).toLocaleString()}</span>
+        </DetailSection>
+        <DetailSection title="Versicherungsnehmer" sectionId="insured-label">
+          <div>
+            <div><span className="sr-only">Name: </span>{report.insured.name}</div>
+            <div><span className="sr-only">Policennummer: </span>{report.insured.policyNumber}</div>
+            <div><span className="sr-only">E-Mail: </span>{report.insured.email}</div>
+            <div><span className="sr-only">Telefon: </span>{report.insured.phone}</div>
+          </div>
+        </DetailSection>
+        <DetailSection title="Fahrzeug" sectionId="vehicle-label">
+          <div>
+            <div><span className="sr-only">Marke: </span>{report.vehicle.brand}</div>
+            <div><span className="sr-only">Modell: </span>{report.vehicle.model}</div>
+            <div><span className="sr-only">Kennzeichen: </span>{report.vehicle.licensePlate}</div>
+            <div><span className="sr-only">VIN: </span>{report.vehicle.vin}</div>
+          </div>
+        </DetailSection>
+        <DetailSection title="Schadensdetails" sectionId="damage-label">
+          <div>
+            <div><span className="sr-only">Datum: </span>{new Date(report.damageDate).toLocaleDateString()}</div>
+            <div><span className="sr-only">Beschreibung: </span>{report.description}</div>
+          </div>
+        </DetailSection>
+        <DetailSection title="Dokumente & Fotos" sectionId="docs-label">
+          <ul className="flex flex-wrap gap-4" aria-label="Hochgeladene Dokumente">
+            {report.files && report.files.length > 0 ? (
+              report.files.map((file: UploadedFile) => (
+                <li key={file.id}>
+                  <a
+                    href={file.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    tabIndex={0}
+                    aria-label={`Dokument öffnen: ${file.name}`}
+                    className="focus:outline focus:ring-2 focus:ring-blue-500"
+                  >
+                    <img src={file.thumbnailUrl || file.url} alt={file.name} className="w-20 h-20 object-cover rounded" />
+                    <div className="truncate text-xs mt-1" aria-label="Dateiname">{file.name}</div>
+                  </a>
+                </li>
+              ))
+            ) : (
+              <li><span>Keine Dokumente vorhanden.</span></li>
+            )}
+          </ul>
+        </DetailSection>
+      </dl>
+    </section>
   );
-};
-
-export default DamageReportDetail;
+}
