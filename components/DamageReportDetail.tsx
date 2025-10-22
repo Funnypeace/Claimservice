@@ -1,136 +1,225 @@
-/*
-Barrierefreiheitsmaßnahmen für DamageReportDetail-Komponente:
+import React from 'react';
 
-1. ARIA-Labels und Rollen:
-   - Hauptcontainer als <section role="region" aria-label="Schadenfall-Detailansicht"> kennzeichnen.
-   - Wichtige Bereiche (Versicherungsnehmer, Fahrzeug, Schaden, Dokumente) als <section> mit aria-labelledby auszeichnen.
-2. Tastatur-Navigation:
-   - Sicherstellen, dass alle interaktiven Elemente (z.B. Zurück-Button, Dokument-Links) per Tab erreichbar sind.
-   - Visuellen Fokuszustand für Buttons und Links hervorheben.
-3. Screenreader-Unterstützung:
-   - Überschriften und wichtige Felder mit aria-label oder aria-labelledby versehen.
-   - Lade- und Fehlerzustände mit role="status" auszeichnen.
-4. Weitere Maßnahmen:
-   - Semantische HTML-Struktur (section, header, dl, dt, dd) verwenden.
-   - Dokumentation der Änderungen im Quellcode.
-*/
+type DamageReport = {
+  id?: string | number;
+  title?: string;
+  subtitle?: string;
+  description?: string;
+  status?: string;
+  vehicle?: string;
+  licensePlate?: string;
+  createdAt?: string | Date;
+  updatedAt?: string | Date;
+  attachments?: Array<{ id?: string | number; name?: string; url?: string }>;
+  [key: string]: any;
+};
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { getReportById } from '../services/damageReportService';
-import { DamageReport, UploadedFile } from '../types';
+type Props = {
+  report?: DamageReport | null;
+  loading?: boolean;
+  error?: string | null;
+  onBack?: () => void;
+  onEdit?: (report: DamageReport) => void;
+  onDelete?: (report: DamageReport) => void;
+};
 
-interface DamageReportDetailProps {
-  reportId: string;
-  onBack: () => void;
+function formatDate(val?: string | Date) {
+  if (!val) return '';
+  try {
+    const d = typeof val === 'string' ? new Date(val) : val;
+    if (Number.isNaN(d.getTime())) return '';
+    return d.toLocaleString();
+  } catch {
+    return '';
+  }
 }
 
-const DetailSection: React.FC<{ title: string; children: React.ReactNode; sectionId: string }> = ({ title, children, sectionId }) => (
-  <section aria-labelledby={sectionId} className="py-5 sm:grid sm:grid-cols-3 sm:gap-4">
-    <dt id={sectionId} className="text-sm font-medium text-slate-500">{title}</dt>
-    <dd className="mt-1 text-sm text-slate-900 sm:col-span-2 sm:mt-0">{children}</dd>
-  </section>
-);
+export default function DamageReportDetail(props: Props) {
+  const { report, loading, error, onBack, onEdit, onDelete } = props ?? {};
 
-export const DamageReportDetail: React.FC<DamageReportDetailProps> = ({ reportId, onBack }) => {
-  const [report, setReport] = useState<DamageReport | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  const fetchReport = useCallback(async () => {
-    if (!reportId) return;
-    setIsLoading(true);
-    const data = await getReportById(reportId);
-    setReport(data || null);
-    setIsLoading(false);
-  }, [reportId]);
-
-  useEffect(() => {
-    fetchReport();
-  }, [fetchReport]);
-
-  if (isLoading) {
+  if (loading) {
     return (
-      <div role="status" aria-live="polite" className="text-center p-12">
-        <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto" aria-label="Lade Schadenfall-Daten"></div>
+      <div className="w-full rounded-xl border border-gray-200 p-4">
+        <div className="mb-3 flex items-center justify-between">
+          <div className="h-6 w-1/3 animate-pulse rounded bg-gray-200" />
+          <div className="h-8 w-24 animate-pulse rounded bg-gray-200" />
+        </div>
+        <div className="space-y-3">
+          <div className="h-4 w-3/4 animate-pulse rounded bg-gray-200" />
+          <div className="h-4 w-2/3 animate-pulse rounded bg-gray-200" />
+          <div className="h-4 w-1/2 animate-pulse rounded bg-gray-200" />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="w-full rounded-xl border border-red-300 bg-red-50 p-4 text-red-700">
+        <div className="mb-2 flex items-center justify-between">
+          <p className="text-lg font-semibold">Detailansicht</p>
+          {typeof onBack === 'function' && (
+            <button
+              type="button"
+              onClick={onBack}
+              className="rounded-lg border px-3 py-1.5 text-sm hover:bg-red-100"
+            >
+              Zurück
+            </button>
+          )}
+        </div>
+        <p className="text-sm opacity-90">{error}</p>
       </div>
     );
   }
 
   if (!report) {
     return (
-      <div role="status" aria-live="assertive" className="text-center p-12">
-        <span>Schadenfall nicht gefunden.</span>
+      <div className="w-full rounded-xl border border-gray-200 p-4">
+        <div className="mb-2 flex items-center justify-between">
+          <h2 className="text-lg font-semibold">Detailansicht</h2>
+          {typeof onBack === 'function' && (
+            <button
+              type="button"
+              onClick={onBack}
+              className="rounded-lg border px-3 py-1.5 text-sm hover:bg-gray-50"
+            >
+              Zurück
+            </button>
+          )}
+        </div>
+        <p className="text-sm text-gray-600">Kein Schadenfall ausgewählt.</p>
       </div>
     );
   }
 
+  const {
+    id,
+    title,
+    subtitle,
+    description,
+    status,
+    vehicle,
+    licensePlate,
+    createdAt,
+    updatedAt,
+    attachments,
+    ...rest
+  } = report;
+
   return (
-    <section role="region" aria-label="Schadenfall-Detailansicht" className="damage-report-detail">
-      <header className="flex items-center justify-between mb-6">
-        <h1 id="damage-detail-title" className="text-2xl font-bold">Schadenfall-Details</h1>
-        <button
-          type="button"
-          aria-label="Zurück zur Übersicht"
-          onClick={onBack}
-          className="btn btn-secondary focus:outline focus:ring-2 focus:ring-blue-500"
-        >
-          Zurück
-        </button>
-      </header>
-      <dl aria-labelledby="damage-detail-title" className="space-y-4">
-        <DetailSection title="Status" sectionId="status-label">
-          <span id="status-label">{report.status}</span>
-        </DetailSection>
-        <DetailSection title="Erstellungsdatum" sectionId="created-label">
-          <span id="created-label">{new Date(report.createdAt).toLocaleString()}</span>
-        </DetailSection>
-        <DetailSection title="Versicherungsnehmer" sectionId="insured-label">
-          <div>
-            <div><span className="sr-only">Name: </span>{report.insured.name}</div>
-            <div><span className="sr-only">Policennummer: </span>{report.insured.policyNumber}</div>
-            <div><span className="sr-only">E-Mail: </span>{report.insured.email}</div>
-            <div><span className="sr-only">Telefon: </span>{report.insured.phone}</div>
+    <div className="w-full rounded-xl border border-gray-200">
+      <div className="flex items-center justify-between border-b px-4 py-3">
+        <div>
+          <h2 className="text-lg font-semibold">{title ?? 'Schadenfall'}</h2>
+          {subtitle && <p className="text-xs text-gray-600">{subtitle}</p>}
+        </div>
+        <div className="flex items-center gap-2">
+          {typeof onBack === 'function' && (
+            <button
+              type="button"
+              onClick={onBack}
+              className="rounded-lg border px-3 py-1.5 text-sm hover:bg-gray-50"
+            >
+              Zurück
+            </button>
+          )}
+          {typeof onEdit === 'function' && (
+            <button
+              type="button"
+              onClick={() => onEdit(report)}
+              className="rounded-lg border px-3 py-1.5 text-sm hover:bg-gray-50"
+            >
+              Bearbeiten
+            </button>
+          )}
+          {typeof onDelete === 'function' && (
+            <button
+              type="button"
+              onClick={() => onDelete(report)}
+              className="rounded-lg border border-red-300 bg-red-50 px-3 py-1.5 text-sm text-red-700 hover:bg-red-100"
+            >
+              Löschen
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className="grid gap-4 p-4 md:grid-cols-2">
+        <div className="space-y-2">
+          <div className="text-sm">
+            <span className="block text-gray-500">ID</span>
+            <span className="font-medium">{id ?? '—'}</span>
           </div>
-        </DetailSection>
-        <DetailSection title="Fahrzeug" sectionId="vehicle-label">
-          <div>
-            <div><span className="sr-only">Marke: </span>{report.vehicle.brand}</div>
-            <div><span className="sr-only">Modell: </span>{report.vehicle.model}</div>
-            <div><span className="sr-only">Kennzeichen: </span>{report.vehicle.licensePlate}</div>
-            <div><span className="sr-only">VIN: </span>{report.vehicle.vin}</div>
+          <div className="text-sm">
+            <span className="block text-gray-500">Status</span>
+            <span className="rounded-full border px-2 py-0.5 text-xs">
+              {status ?? '—'}
+            </span>
           </div>
-        </DetailSection>
-        <DetailSection title="Schadensdetails" sectionId="damage-label">
-          <div>
-            <div><span className="sr-only">Datum: </span>{new Date(report.damageDate).toLocaleDateString()}</div>
-            <div><span className="sr-only">Beschreibung: </span>{report.description}</div>
+          <div className="text-sm">
+            <span className="block text-gray-500">Fahrzeug</span>
+            <span className="font-medium">{vehicle ?? '—'}</span>
           </div>
-        </DetailSection>
-        <DetailSection title="Dokumente & Fotos" sectionId="docs-label">
-          <ul className="flex flex-wrap gap-4" aria-label="Hochgeladene Dokumente">
-            {report.files && report.files.length > 0 ? (
-              report.files.map((file: UploadedFile) => (
-                <li key={file.id}>
-                  <a
-                    href={file.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    tabIndex={0}
-                    aria-label={`Dokument öffnen: ${file.name}`}
-                    className="focus:outline focus:ring-2 focus:ring-blue-500"
-                  >
-                    <img src={file.thumbnailUrl || file.url} alt={file.name} className="w-20 h-20 object-cover rounded" />
-                    <div className="truncate text-xs mt-1" aria-label="Dateiname">{file.name}</div>
-                  </a>
-                </li>
-              ))
-            ) : (
-              <li><span>Keine Dokumente vorhanden.</span></li>
-            )}
-          </ul>
-        </DetailSection>
-      </dl>
-    </section>
+          <div className="text-sm">
+            <span className="block text-gray-500">Kennzeichen</span>
+            <span className="font-medium">{licensePlate ?? '—'}</span>
+          </div>
+          <div className="text-sm">
+            <span className="block text-gray-500">Erstellt</span>
+            <span className="font-medium">{formatDate(createdAt) || '—'}</span>
+          </div>
+          <div className="text-sm">
+            <span className="block text-gray-500">Aktualisiert</span>
+            <span className="font-medium">{formatDate(updatedAt) || '—'}</span>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <div className="text-sm">
+            <span className="block text-gray-500">Beschreibung</span>
+            <span className="whitespace-pre-wrap">
+              {description?.trim() || '—'}
+            </span>
+          </div>
+
+          {Array.isArray(attachments) && attachments.length > 0 && (
+            <div className="text-sm">
+              <span className="block text-gray-500">Anhänge</span>
+              <ul className="list-inside list-disc">
+                {attachments.map((a, i) => (
+                  <li key={a?.id ?? i}>
+                    {a?.url ? (
+                      <a
+                        href={a.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="underline"
+                      >
+                        {a?.name ?? a?.url}
+                      </a>
+                    ) : (
+                      <span>{a?.name ?? 'Anhang'}</span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Debug-Section (optional) */}
+      {rest && Object.keys(rest).length > 0 && (
+        <details className="mx-4 mb-4 rounded-lg border border-gray-200 p-3">
+          <summary className="cursor-pointer text-sm font-medium">
+            Weitere Felder
+          </summary>
+          <pre className="mt-2 overflow-auto whitespace-pre-wrap rounded bg-gray-50 p-2 text-xs">
+            {JSON.stringify(rest, null, 2)}
+          </pre>
+        </details>
+      )}
+    </div>
   );
 }
-
-export default DamageReportDetail;
