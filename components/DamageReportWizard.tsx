@@ -12,7 +12,7 @@ import Step5Review from '../wizard/Step5_ReviewSubmit';
 
 const TOTAL_STEPS = 5;
 
-const emptyReport: Omit<DamageReport, 'id'> | 'createdAt' | 'updatedAt'> = {
+const emptyReport: Omit<DamageReport, 'id' | 'createdAt'  | 'updatedAt'> = {
   status: ReportStatus.DRAFT,
   policyholder: { name: '', policyNumber: '', email: '', phone: '' },
   vehicle: { make: '', model: '', licensePlate: '', vin: '' },
