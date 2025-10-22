@@ -1,97 +1,171 @@
-/*
-Barrierefreiheitsmaßnahmen für DamageReportList-Komponente:
+import React, { useMemo } from 'react';
 
-1. ARIA-Labels und Rollen:
-   - Hauptcontainer als <section role="region" aria-label="Schadenfall-Übersicht"> kennzeichnen.
-   - Die Liste der Schadenfälle als <div role="list"> auszeichnen.
-2. Tastatur-Navigation:
-   - Sicherstellen, dass alle ReportCards per Tab erreichbar sind (über tabIndex und Weitergabe an ReportCard).
-   - Visuellen Fokuszustand für die Liste und Karten hervorheben.
-3. Screenreader-Unterstützung:
-   - Überschriften und wichtige Felder mit aria-label oder aria-labelledby versehen.
-   - Lade- und Fehlerzustände mit role="status" auszeichnen.
-4. Weitere Maßnahmen:
-   - Semantische HTML-Struktur (section, header, div) verwenden.
-   - Dokumentation der Änderungen im Quellcode.
-*/
+/**
+ * Vorsichtige, tolerante Props-Definition:
+ * - Alle Props sind optional, damit bestehende Aufrufer nicht brechen.
+ * - onSelect/onCreate werden nur aufgerufen, wenn sie existieren.
+ * - reports kann beliebig geformt sein (id/title/fallback), daher any.
+ */
+type DamageReport = {
+  id?: string | number;
+  title?: string;
+  subtitle?: string;
+  status?: string;
+  createdAt?: string | Date;
+  [key: string]: any;
+};
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { listReports } from '../src/lib/api';
-import { DamageReport, ReportStatus } from '../types';
-import { PlusIcon } from './ui/Icons';
-import { ReportCard } from './ReportCard';
+type Props = {
+  reports?: DamageReport[] | null;
+  loading?: boolean;
+  error?: string | null;
+  onSelect?: (report: DamageReport) => void;
+  onCreate?: () => void;
+  /** Optional: eigene leere-Status-Nachricht */
+  emptyMessage?: string;
+};
 
-interface DamageReportListProps {
-  onNewReport: () => void;
-  onEditReport: (id: string) => void;
-  onViewDetails: (id: string) => void;
+function formatDate(val: string | Date | undefined) {
+  if (!val) return '';
+  try {
+    const d = typeof val === 'string' ? new Date(val) : val;
+    if (Number.isNaN(d.getTime())) return '';
+    return d.toLocaleString();
+  } catch {
+    return '';
+  }
 }
 
-export const DamageReportList: React.FC<DamageReportListProps> = ({
-  onNewReport,
-  onEditReport,
-  onViewDetails,
-}) => {
-  const [reports, setReports] = useState<DamageReport[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+function getKey(r: DamageReport, idx: number) {
+  if (r?.id != null) return String(r.id);
+  if (r?.uuid != null) return String(r.uuid);
+  // Fallback-Key
+  return `row-${idx}`;
+}
 
-  const fetchReports = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      const response = await listReports();
-      const data = response.reports || [];
-      setReports(data);
-    } catch (err) {
-      console.error('Error fetching reports:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Unbekannter Fehler';
-      setError(`Fehler beim Laden der Schadensmeldungen: ${errorMessage}`);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+/**
+ * TOP-LEVEL DEFAULT EXPORT:
+ * Keine export-Anweisung am Dateiende innerhalb eines Blocks etc.
+ * Dadurch kein „Unexpected export"-Fehler bei Vercel/Rollup.
+ */
+export default function DamageReportList(props: Props) {
+  const {
+    reports,
+    loading,
+    error,
+    onSelect,
+    onCreate,
+    emptyMessage = 'Keine Schadenfälle gefunden.',
+  } = props ?? {};
 
-  useEffect(() => {
-    fetchReports();
-  }, [fetchReports]);
+  const data: DamageReport[] = useMemo(() => {
+    if (!Array.isArray(reports)) return [];
+    return reports;
+  }, [reports]);
+
+  if (loading) {
+    return (
+      <div className="w-full rounded-xl border border-gray-200 p-4">
+        <div className="animate-pulse space-y-3">
+          <div className="h-5 w-1/3 rounded bg-gray-200" />
+          <div className="h-4 w-2/3 rounded bg-gray-200" />
+          <div className="h-4 w-3/5 rounded bg-gray-200" />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="w-full rounded-xl border border-red-300 bg-red-50 p-4 text-red-700">
+        <p className="font-medium">Fehler beim Laden</p>
+        <p className="text-sm opacity-90">{error}</p>
+      </div>
+    );
+  }
+
+  if (!data.length) {
+    return (
+      <div className="w-full rounded-xl border border-gray-200 p-4">
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-lg font-semibold">Schadenfälle</h2>
+          {typeof onCreate === 'function' && (
+            <button
+              type="button"
+              onClick={onCreate}
+              className="rounded-lg border px-3 py-1.5 text-sm hover:bg-gray-50"
+            >
+              Neu anlegen
+            </button>
+          )}
+        </div>
+        <p className="text-sm text-gray-600">{emptyMessage}</p>
+      </div>
+    );
+  }
 
   return (
-    <section role="region" aria-label="Schadenfall-Übersicht" className="damage-report-list">
-      <header>
-        <h1 id="damage-list-title">Schadenfall-Übersicht</h1>
-        <button
-          type="button"
-          aria-label="Neuen Schadenfall anlegen"
-          onClick={onNewReport}
-          className="new-report-btn"
-        >
-          <PlusIcon aria-hidden="true" /> Neuer Schadenfall
-        </button>
-      </header>
-      {isLoading ? (
-        <div role="status" aria-live="polite">Lade Schadenfälle…</div>
-      ) : error ? (
-        <div role="status" aria-live="assertive">{error}</div>
-      ) : reports.length === 0 ? (
-        <div role="status" aria-live="polite">Keine Schadenfälle vorhanden.</div>
-      ) : (
-        <div role="list" aria-labelledby="damage-list-title" className="report-list-grid">
-          {reports.map((report) => (
-            <ReportCard
-              key={report.id}
-              id={report.id}
-              status={report.status}
-              createdAt={report.createdAt}
-              vehicle={report.vehicle}
-              onClick={() => onViewDetails(report.id)}
-            />
-          ))}
-        </div>
-      )}
-    </section>
+    <div className="w-full overflow-hidden rounded-xl border border-gray-200">
+      <div className="flex items-center justify-between border-b px-4 py-3">
+        <h2 className="text-lg font-semibold">Schadenfälle</h2>
+        {typeof onCreate === 'function' && (
+          <button
+            type="button"
+            onClick={onCreate}
+            className="rounded-lg border px-3 py-1.5 text-sm hover:bg-gray-50"
+          >
+            Neu anlegen
+          </button>
+        )}
+      </div>
+
+      <ul className="divide-y">
+        {data.map((r, idx) => {
+          const key = getKey(r, idx);
+          const title =
+            r?.title ??
+            r?.headline ??
+            r?.subject ??
+            `Schadenfall ${key.replace('row-', '#')}`;
+          const subtitle =
+            r?.subtitle ??
+            r?.plate ??
+            r?.licensePlate ??
+            r?.vehicle ??
+            r?.description ??
+            '';
+          const status = r?.status ?? r?.state ?? r?.phase ?? '';
+          const created = formatDate(r?.createdAt ?? r?.created_at ?? r?.created);
+
+          return (
+            <li
+              key={key}
+              className="cursor-pointer px-4 py-3 hover:bg-gray-50"
+              onClick={() => {
+                if (typeof onSelect === 'function') onSelect(r);
+              }}
+            >
+              <div className="flex items-center justify-between">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium">{title}</p>
+                  {(subtitle || created) && (
+                    <p className="truncate text-xs text-gray-600">
+                      {subtitle}
+                      {subtitle && created ? ' · ' : ''}
+                      {created}
+                    </p>
+                  )}
+                </div>
+                {status && (
+                  <span className="ml-3 shrink-0 rounded-full border px-2 py-0.5 text-xs">
+                    {status}
+                  </span>
+                )}
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
   );
-
-
-
-export default DamageReportList;
+}
