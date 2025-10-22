@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { DamageReport, ReportStatus } from '../types';
-import { getReportById, createReport, updateReport } from '../services/damageReportService';
-import { toISOFromInput } from '../src/lib/date';
+import { DamageReport, ReportStatus } from './types';
+import { getReportById, createReport, updateReport } from './services/damageReportService';
+import { toISOFromInput } from './src/lib/date';
 
-import ProgressBar from '../ui/ProgressBar';
-import Step1Policyholder from '../wizard/Step1_PolicyholderInfo';
-import Step2Vehicle from '../wizard/Step2_VehicleInfo';
-import Step3Damage from '../wizard/Step3_DamageDetails';
-import Step4Uploads from '../wizard/Step4_Uploads';
-import Step5Review from '../wizard/Step5_ReviewSubmit';
+import ProgressBar from './ui/ProgressBar';
+import Step1Policyholder from './wizard/Step1_PolicyholderInfo';
+import Step2Vehicle from './wizard/Step2_VehicleInfo';
+import Step3Damage from './wizard/Step3_DamageDetails';
+import Step4Uploads from './wizard/Step4_Uploads';
+import Step5Review from './wizard/Step5_ReviewSubmit';
 
 const TOTAL_STEPS = 5;
 
