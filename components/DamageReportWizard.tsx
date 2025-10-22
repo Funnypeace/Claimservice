@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { DamageReport, ReportStatus } from '../types';
-import { getReportById, createReport, updateReport } from './services/damageReportService';
+import { getReportById, createReport, updateReport } from '../services/damageReportService';
 import { toISOFromInput } from './src/lib/date';
 
 import ProgressBar from './ui/ProgressBar';
