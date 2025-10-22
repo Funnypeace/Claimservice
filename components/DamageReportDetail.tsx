@@ -132,3 +132,5 @@ export const DamageReportDetail: React.FC<DamageReportDetailProps> = ({ reportId
     </section>
   );
 }
+
+export default DamageReportDetail;
