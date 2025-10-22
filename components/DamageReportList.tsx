@@ -91,4 +91,6 @@ export const DamageReportList: React.FC<DamageReportListProps> = ({
       )}
     </section>
   );
-}
+
+
+export default DamageReportList;}
