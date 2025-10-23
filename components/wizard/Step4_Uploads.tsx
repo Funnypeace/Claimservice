@@ -5,10 +5,10 @@ import { UploadIcon, TrashIcon } from '../ui/Icons';
 
 interface Step4Props {
   files: UploadedFile[];
-  onFilesChange: (files: UploadedFile[]) => void;
+  onChange: (files: UploadedFile[]) => void;
 }
 
-const Step4Uploads: React.FC<Step4Props> = ({ files, onFilesChange }) => {
+const Step4Uploads: React.FC<Step4Props> = ({ files, onChange }) => {
 
   const handleFileChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files) {
@@ -30,13 +30,13 @@ const Step4Uploads: React.FC<Step4Props> = ({ files, onFilesChange }) => {
       });
 
       Promise.all(newUploadedFiles).then(newFiles => {
-        onFilesChange([...files, ...newFiles]);
+        onChange([...files, ...newFiles]);
       });
     }
-  }, [files, onFilesChange]);
+  }, [files, onChange]);
 
   const removeFile = (index: number) => {
-    onFilesChange(files.filter((_, i) => i !== index));
+    onChange(files.filter((_, i) => i !== index));
   };
 
   return (

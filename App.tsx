@@ -1,44 +1,129 @@
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import DamageReportList from './components/DamageReportList';
 import DamageReportWizard from './components/DamageReportWizard';
 import DamageReportDetail from './components/DamageReportDetail';
+import { DamageReport } from './types';
+import { getReports, getReportById } from './services/damageReportService';
 
 type View = 'list' | 'wizard' | 'detail';
 
 const App: React.FC = () => {
   const [view, setView] = useState<View>('list');
+  const [reports, setReports] = useState<DamageReport[]>([]);
+  const [listLoading, setListLoading] = useState(false);
+  const [listError, setListError] = useState<string | null>(null);
   const [activeReportId, setActiveReportId] = useState<string | null>(null);
+  const [activeReport, setActiveReport] = useState<DamageReport | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState<string | null>(null);
+
+  const loadReports = useCallback(async () => {
+    setListLoading(true);
+    setListError(null);
+    try {
+      const data = await getReports();
+      setReports(data);
+    } catch (error: any) {
+      console.error('Fehler beim Laden der Schadenfälle:', error);
+      setListError(error?.message ?? 'Schadenfälle konnten nicht geladen werden.');
+    } finally {
+      setListLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadReports();
+  }, [loadReports]);
 
   const handleStartNewReport = useCallback(() => {
     setActiveReportId(null);
+    setActiveReport(null);
     setView('wizard');
-  }, []);
-
-  const handleEditReport = useCallback((id: string) => {
-    setActiveReportId(id);
-    setView('wizard');
-  }, []);
-  
-  const handleViewDetails = useCallback((id: string) => {
-    setActiveReportId(id);
-    setView('detail');
   }, []);
 
   const handleBackToList = useCallback(() => {
     setActiveReportId(null);
+    setActiveReport(null);
     setView('list');
   }, []);
+
+  const handleSelectReport = useCallback(async (report: DamageReport) => {
+    const reportId = report.publicId ?? report.id ?? null;
+    if (!reportId) {
+      setActiveReport(null);
+      setActiveReportId(null);
+      setDetailError('Der ausgewählte Schaden enthält keine gültige ID.');
+      setView('detail');
+      return;
+    }
+
+    setDetailLoading(true);
+    setDetailError(null);
+    setView('detail');
+    setActiveReportId(String(reportId));
+    try {
+      const fullReport = await getReportById(String(reportId));
+      setActiveReport(fullReport ?? report);
+      if (!fullReport) {
+        setDetailError('Der ausgewählte Schaden konnte nicht geladen werden.');
+      }
+    } catch (error: any) {
+      console.error('Fehler beim Laden des Schadens:', error);
+      setDetailError(error?.message ?? 'Der Schaden konnte nicht geladen werden.');
+      setActiveReport(report);
+    } finally {
+      setDetailLoading(false);
+    }
+  }, []);
+
+  const handleEditReport = useCallback((report: DamageReport) => {
+    const reportId = report.publicId ?? report.id ?? null;
+    if (!reportId) {
+      setDetailError('Der ausgewählte Schaden kann nicht bearbeitet werden.');
+      return;
+    }
+    setActiveReportId(String(reportId));
+    setActiveReport(report);
+    setView('wizard');
+  }, []);
+
+  const handleSaveSuccess = useCallback(async () => {
+    await loadReports();
+    handleBackToList();
+  }, [handleBackToList, loadReports]);
 
   const renderView = () => {
     switch (view) {
       case 'wizard':
-        return <DamageReportWizard reportId={activeReportId} onBack={handleBackToList} onSaveSuccess={handleBackToList} />;
+        return (
+          <DamageReportWizard
+            reportId={activeReportId}
+            onBack={handleBackToList}
+            onSaveSuccess={handleSaveSuccess}
+          />
+        );
       case 'detail':
-        return <DamageReportDetail reportId={activeReportId!} onBack={handleBackToList} />;
+        return (
+          <DamageReportDetail
+            report={activeReport}
+            loading={detailLoading}
+            error={detailError}
+            onBack={handleBackToList}
+            onEdit={handleEditReport}
+          />
+        );
       case 'list':
       default:
-        return <DamageReportList onNewReport={handleStartNewReport} onEditReport={handleEditReport} onViewDetails={handleViewDetails} />;
+        return (
+          <DamageReportList
+            reports={reports}
+            loading={listLoading}
+            error={listError}
+            onCreate={handleStartNewReport}
+            onSelect={handleSelectReport}
+          />
+        );
     }
   };
 
