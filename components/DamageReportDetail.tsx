@@ -1,16 +1,10 @@
 import React from 'react';
+import type { DamageReport as ReportType, Vehicle, Policyholder, ReportAttachment } from '../types';
 
-type DamageReport = {
-  id?: string | number;
-  title?: string;
-  subtitle?: string;
-  description?: string;
-  status?: string;
-  vehicle?: string;
-  licensePlate?: string;
-  createdAt?: string | Date;
-  updatedAt?: string | Date;
-  attachments?: Array<{ id?: string | number; name?: string; url?: string }>;
+type DamageReport = Partial<ReportType> & {
+  vehicle?: Vehicle | string | null;
+  policyholder?: Policyholder | string | null;
+  attachments?: ReportAttachment[] | Array<{ id?: string | number; name?: string; url?: string }>;
   [key: string]: any;
 };
 
@@ -23,7 +17,7 @@ type Props = {
   onDelete?: (report: DamageReport) => void;
 };
 
-function formatDate(val?: string | Date) {
+function formatDate(val?: string | Date | null) {
   if (!val) return '';
   try {
     const d = typeof val === 'string' ? new Date(val) : val;
@@ -32,6 +26,29 @@ function formatDate(val?: string | Date) {
   } catch {
     return '';
   }
+}
+
+function getVehicleSummary(vehicle: DamageReport['vehicle']) {
+  if (!vehicle) return '—';
+  if (typeof vehicle === 'string') {
+    const trimmed = vehicle.trim();
+    return trimmed.length > 0 ? trimmed : '—';
+  }
+
+  const parts = [vehicle.licensePlate, vehicle.make, vehicle.model].filter(Boolean);
+  if (parts.length > 0) {
+    return parts.join(' · ');
+  }
+
+  return '—';
+}
+
+function asPolicyholderName(policyholder: DamageReport['policyholder']) {
+  if (!policyholder) return '—';
+  if (typeof policyholder === 'string') {
+    return policyholder.trim() || '—';
+  }
+  return policyholder.name || '—';
 }
 
 export default function DamageReportDetail(props: Props) {
@@ -104,8 +121,14 @@ export default function DamageReportDetail(props: Props) {
     createdAt,
     updatedAt,
     attachments,
+    policyholder,
     ...rest
   } = report;
+
+  const vehicleSummary = getVehicleSummary(vehicle);
+  const vehicleData = typeof vehicle === 'object' && vehicle !== null ? vehicle : null;
+  const licensePlateValue = licensePlate ?? vehicleData?.licensePlate ?? '—';
+  const policyholderName = asPolicyholderName(policyholder);
 
   return (
     <div className="w-full rounded-xl border border-gray-200">
@@ -158,12 +181,16 @@ export default function DamageReportDetail(props: Props) {
             </span>
           </div>
           <div className="text-sm">
+            <span className="block text-gray-500">Versicherungsnehmer</span>
+            <span className="font-medium">{policyholderName}</span>
+          </div>
+          <div className="text-sm">
             <span className="block text-gray-500">Fahrzeug</span>
-            <span className="font-medium">{vehicle ?? '—'}</span>
+            <span className="font-medium">{vehicleSummary}</span>
           </div>
           <div className="text-sm">
             <span className="block text-gray-500">Kennzeichen</span>
-            <span className="font-medium">{licensePlate ?? '—'}</span>
+            <span className="font-medium">{licensePlateValue || '—'}</span>
           </div>
           <div className="text-sm">
             <span className="block text-gray-500">Erstellt</span>

@@ -127,11 +127,23 @@ export default function DamageReportList(props: Props) {
             r?.headline ??
             r?.subject ??
             `Schadenfall ${key.replace('row-', '#')}`;
+          const vehicleLabel = (() => {
+            const vehicle = r?.vehicle;
+            if (!vehicle) return '';
+            if (typeof vehicle === 'string') return vehicle;
+            if (typeof vehicle === 'object') {
+              const { licensePlate, make, model } = vehicle as Record<string, any>;
+              const summary = [licensePlate, make, model].filter(Boolean).join(' · ');
+              return summary || '';
+            }
+            return '';
+          })();
+
           const subtitle =
             r?.subtitle ??
             r?.plate ??
             r?.licensePlate ??
-            r?.vehicle ??
+            vehicleLabel ??
             r?.description ??
             '';
           const status = r?.status ?? r?.state ?? r?.phase ?? '';
